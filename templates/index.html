@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Luke & Leia's Laser</title>
+    <style>
+        #video-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #video-stream {
+            width: 640px;
+            height: 480px;
+        }
+
+        #controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .arrow-key {
+            margin: 10px;
+            width: 80px;
+            height: 80px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #arrow-up {
+            margin-bottom: 10px;
+        }
+
+        #arrow-row {
+            display: flex;
+            justify-content: center;
+        }
+
+        #arrow-row .arrow-key {
+            margin: 10px;
+        }
+
+        .toggle-switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .toggle-switch-label {
+            margin-left: 10px;
+            margin-right: 5px;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+
+        .toggle-switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-switch-slider {
+            background-color: #ff0000;
+        }
+
+        input:checked + .toggle-switch-slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            var buttonTimer;
+
+            function sendMoveServoRequest(direction) {
+                $.ajax({
+                    url: '/move_servo',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ 'direction': direction }),
+                    success: function () {},
+                    error: function (xhr, status, error) {
+                        console.error(xhr.responseText);
+                    }
+                });
+            }
+
+            function buttonHold(direction) {
+                buttonTimer = setInterval(function () {
+                    sendMoveServoRequest(direction);
+                }, 100); // interval time (ms)
+            }
+
+            function buttonRelease() {
+                clearInterval(buttonTimer);
+            }
+
+            $('.arrow-key').on('mousedown', function () {
+                var direction = $(this).attr('data-direction');
+                buttonHold(direction);
+            });
+
+            $('.arrow-key').on('mouseup', function () {
+                buttonRelease();
+            });
+
+            $('#laser-toggle').change(function () {
+                var isActive = $(this).is(':checked');
+                $.ajax({
+                    url: '/toggle_laser',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ 'value': isActive }),
+                    success: function () {},
+                    error: function (xhr, status, error) {
+                        console.error(xhr.responseText);
+                    }
+                });
+            });
+
+            $('#crosshair-toggle').change(function () {
+                var isActive = $(this).is(':checked');
+                $.ajax({
+                    url: '/toggle_crosshair',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ 'value': isActive }),
+                    success: function () {},
+                    error: function (xhr, status, error) {
+                        console.error(xhr.responseText);
+                    }
+                });
+            });
+
+        });
+    </script>
+</head>
+<body>
+    <div id="video-container">
+        <img id="video-stream" src="/video" alt="Video Stream">
+    </div>
+    <div id="controls">
+        <div id="arrow-row">
+            <button id="arrow-up" class="arrow-key" data-direction="up">&#8593;</button>
+        </div>
+        <div id="arrow-row">
+            <button id="arrow-left" class="arrow-key" data-direction="left">&#8592;</button>
+            <button id="arrow-down" class="arrow-key" data-direction="down">&#8595;</button>
+            <button id="arrow-right" class="arrow-key" data-direction="right">&#8594;</button>
+        </div>
+    </div>
+    <div class="toggle-switch-container">
+        <label for="laser-toggle" class="toggle-switch-label">Toggle Laser</label>
+        <label class="toggle-switch">
+            <input type="checkbox" id="laser-toggle">
+            <span class="toggle-switch-slider"></span>
+        </label>
+    </div>
+    <div class="toggle-switch-container">
+        <label for="crosshair-toggle" class="toggle-switch-label">Toggle crosshair</label>
+        <label class="toggle-switch">
+            <input type="checkbox" id="crosshair-toggle">
+            <span class="toggle-switch-slider"></span>
+        </label>
+    </div>
+</body>
+</html>
