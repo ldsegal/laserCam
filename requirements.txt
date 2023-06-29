@@ -1,12 +1,13 @@
-flask # Webserver
-RPi.GPIO # GPIO pin control for laser
-adafruit-circuitpython-servokit # PCA9685 servo driver for pan & tilting
+
+# Webserver
+flask
+gevent
+redis
+nginx
 
 # Camera libraries
 picamera
 opencv-python
 
-# Server deployment
-gunicorn
-nginx
-redis
+RPi.GPIO # GPIO pin control for laser
+adafruit-circuitpython-servokit # PCA9685 servo driver for pan & tilting
