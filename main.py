@@ -1,34 +1,10 @@
 
 from flask import Flask, render_template, Response, request
 import gevent
-import RPi.GPIO as gpio
 from camera import Camera
+from gpio import set_laser, clear_laser, get_tilt, set_tilt, get_pan, set_pan
 import cv2
-from adafruit_servokit import ServoKit
 import redis
-
-# Gpio setup
-LASER_PIN = 14
-LED_PIN = 27
-gpio.setmode(gpio.BCM)
-gpio.setup(LASER_PIN, gpio.OUT)
-gpio.setup(LED_PIN, gpio.OUT)
-
-# Servo pan/tilt setup
-TILT = 0
-PAN = 1
-PAN_MIN = 0 # left
-PAN_CENTER = 90
-PAN_MAX = 180 # right
-TILT_MIN = 50 # down
-TILT_CENTER = 85
-TILT_MAX = 120 # up
-BUTTON_MOVE_ANGLE = 2
-pan = PAN_CENTER
-tilt = TILT_CENTER
-pan_tilt = ServoKit(channels=8)
-pan_tilt.servo[PAN].angle = pan
-pan_tilt.servo[TILT].angle = tilt
 
 # Redis setup, used to share global data across all workers & connected clients
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
@@ -62,28 +38,25 @@ def video():
 
 @app.route('/move_servo', methods=['POST'])
 def move_servo():
-    global pan
-    global tilt
     direction = request.json['direction']
-    if direction == 'up' and tilt < TILT_MAX:
-        tilt += BUTTON_MOVE_ANGLE
-    elif direction == 'down' and tilt > TILT_MIN:
-        tilt -= BUTTON_MOVE_ANGLE
-    elif direction == 'left' and pan > PAN_MIN:
-        pan -= BUTTON_MOVE_ANGLE
-    elif direction == 'right' and pan < PAN_MAX:
-        pan += BUTTON_MOVE_ANGLE
-    pan_tilt.servo[PAN].angle = pan
-    pan_tilt.servo[TILT].angle = tilt
+    BUTTON_MOVE_ANGLE = 2
+    if direction == 'up':
+        set_tilt(get_tilt() + BUTTON_MOVE_ANGLE)
+    elif direction == 'down':
+        set_tilt(get_tilt() - BUTTON_MOVE_ANGLE)
+    elif direction == 'left':
+        set_pan(get_pan() - BUTTON_MOVE_ANGLE)
+    elif direction == 'right':
+        set_pan(get_pan() + BUTTON_MOVE_ANGLE)
     return '', 204
 
 @app.route('/toggle_laser', methods=['POST'])
 def toggle_laser():
     value = request.json['value']
     if value:
-        gpio.output(LASER_PIN, gpio.HIGH)
+        set_laser()
     else:
-       gpio.output(LASER_PIN, gpio.LOW) 
+        clear_laser() 
     return '', 204
 
 @app.route('/toggle_crosshair', methods=['POST'])

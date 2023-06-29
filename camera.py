@@ -3,6 +3,7 @@
 import time
 import threading
 import cv2
+from gpio import set_indicator_led, clear_indicator_led
 
 
 # An event-like class to signal all active clients when a new frame is available
@@ -75,6 +76,7 @@ class Camera():
     @classmethod
     def _thread(cls):
         print('Starting camera thread')
+        set_indicator_led() # Turn on status indicator light
         frames_itr = cls.frames()
         for frame in frames_itr:
             Camera.frame = frame # Get the current frame
@@ -85,6 +87,7 @@ class Camera():
             if time.time() - Camera.last_access > 10:
                 frames_itr.close()
                 print('Stopping camera thread due to inactivity')
+                clear_indicator_led() # Turn off status indicator light
                 break
         Camera.thread = None
 
