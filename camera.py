@@ -4,6 +4,14 @@ import time
 import threading
 import cv2
 from gpio import set_indicator_led, clear_indicator_led
+from state_data import get_crosshair
+
+INACTIVE_TIMEOUT = 5 # Wait time (s) for assuming client/thread inactive
+
+# Draw crosshair onto image frame
+def draw_crosshair(frame):
+    height, width, _ = frame.shape # Get frame size
+    cv2.drawMarker(frame, (width // 2, height // 2), (0, 0, 255), cv2.MARKER_CROSS, 20, 2) # Draw cross
 
 
 # An event-like class to signal all active clients when a new frame is available
@@ -29,8 +37,8 @@ class CameraEvent():
                 event[0].set() # Set this client's event
                 event[1] = now # Update this client's last timestamp
             else:
-                # Client did not read a previous frame, after 5 secs assume client is gone and remove
-                if now - event[1] > 5:
+                # Previous frame not read, assume client is gone and remove after timeout duration
+                if now - event[1] > INACTIVE_TIMEOUT:
                     remove = ident
         if remove:
             del self.events[remove]
@@ -70,7 +78,14 @@ class Camera():
             raise RuntimeError('Could not open camera')
 
         while True:
-            yield camera.read()[1]
+            frame = camera.read()[1] # Read frame from camera
+
+            # Draw markings onto frame
+            if get_crosshair():
+                draw_crosshair(frame)
+
+            ret, buffer = cv2.imencode('.jpg', frame) # Encode frame
+            yield buffer.tobytes()
 
     # Camera background thread
     @classmethod
@@ -83,12 +98,13 @@ class Camera():
             Camera.event.set() # Signal clients a new frame is ready
             time.sleep(0)
 
-            # Stop the thread if no clients request frames for 10 secs
-            if time.time() - Camera.last_access > 10:
+            # Stop the thread if no clients request frames for longer than timeout duration
+            if time.time() - Camera.last_access > INACTIVE_TIMEOUT:
                 frames_itr.close()
                 print('Stopping camera thread due to inactivity')
                 clear_indicator_led() # Turn off status indicator light
                 break
         Camera.thread = None
+
 
 

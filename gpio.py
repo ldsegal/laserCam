@@ -1,6 +1,7 @@
 # Handles gpio for laser, led, & PCA9685 servo driver
 import RPi.GPIO as gpio
 from adafruit_servokit import ServoKit
+from state_data import set_laser as set_laser_state
 
 # Pin assignments
 LED_PIN = 27
@@ -35,10 +36,12 @@ def clear_indicator_led():
 # Turn laser on
 def set_laser():
     gpio.output(LASER_PIN, gpio.HIGH)
+    set_laser_state(True)
 
 # Turn laser off
 def clear_laser():
     gpio.output(LASER_PIN, gpio.LOW)
+    set_laser_state(False)
 
 # Get servo tilt angle
 def get_tilt():
