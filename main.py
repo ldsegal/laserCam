@@ -2,12 +2,13 @@
 from flask import Flask, render_template, Response, request
 import gevent
 from camera import Camera
-from gpio import set_laser, clear_laser, get_tilt, set_tilt, get_pan, set_pan
+from gpio import init_gpio, set_laser, clear_laser, get_tilt, set_tilt, get_pan, set_pan
 from state_data import set_crosshair
 
 # Web app setup
 GEVENT_SLEEP_TIME = 0.01
 app = Flask(__name__)
+init_gpio()
 
 # Routes
 @app.route('/')
@@ -27,7 +28,7 @@ def video():
 @app.route('/move_servo', methods=['POST'])
 def move_servo():
     direction = request.json['direction']
-    BUTTON_MOVE_ANGLE = 2
+    BUTTON_MOVE_ANGLE = 5
     if direction == 'up':
         set_tilt(get_tilt() + BUTTON_MOVE_ANGLE)
     elif direction == 'down':
