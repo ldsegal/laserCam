@@ -1,110 +1,122 @@
-# Camera classes to enable video streaming to multiple clients
-# Based on https://github.com/miguelgrinberg/flask-video-streaming/blob/master/base_camera.py
+
 import time
 import threading
 import cv2
 from gpio import set_indicator_led, clear_indicator_led
 from state_data import get_crosshair
 
-INACTIVE_TIMEOUT = 5 # Wait time (s) for assuming client/thread inactive
-
-# Draw crosshair onto image frame
-def draw_crosshair(frame):
-    height, width, _ = frame.shape # Get frame size
-    cv2.drawMarker(frame, (width // 2, height // 2), (0, 0, 255), cv2.MARKER_CROSS, 20, 2) # Draw cross
+INACTIVE_TIMEOUT = 5  # Pause capture if no client accesses for N seconds
+CAMERA_INDEX = 0      # Camera device index
+FRAME_ENCODE_QUALITY = 90  # JPEG quality (1-100)
 
 
-# An event-like class to signal all active clients when a new frame is available
-class CameraEvent():
-    
-    def __init__(self):
-        self.events = {}
+class Camera:
+    """
+    Singleton manager for camera stream.
+    - Runs one background thread that captures frames continuously
+    - Pauses capture if no clients request frames for INACTIVE_TIMEOUT seconds
+    - Resumes capture when client reconnects
+    - Broadcasts latest frame to all connected clients (no queuing)
+    """
+    _instance = None
+    _lock = threading.Lock()
 
-    # Invoked from each client's thread to wait for next frame
-    def wait(self):
-        ident = threading.get_ident()
-        if ident not in self.events:
-            self.events[ident] = [threading.Event(), time.time()] # New client, add their event & timestamp
-        return self.events[ident][0].wait() # Wait until this client's event is set
-
-    # Invoked by the camera thread when a new frame is available
-    def set(self):
-        now = time.time()
-        remove = None
-
-        for ident, event in self.events.items():
-            if not event[0].isSet():
-                event[0].set() # Set this client's event
-                event[1] = now # Update this client's last timestamp
-            else:
-                # Previous frame not read, assume client is gone and remove after timeout duration
-                if now - event[1] > INACTIVE_TIMEOUT:
-                    remove = ident
-        if remove:
-            del self.events[remove]
-
-    # Invoked from each client's thread after a frame is read
-    def clear(self):
-        self.events[threading.get_ident()][0].clear()
-
-
-# Class to handle camera background thread and supply image frames
-class Camera():
-    thread = None # Camera background thread to get frames
-    frame = None # Current frame
-    last_access = 0 # Time of last client access
-    event = CameraEvent()
-
-    # Start camera background thread if not running
-    def __init__(self):
-        if Camera.thread is None:
-            Camera.last_acess = time.time()
-            Camera.thread = threading.Thread(target=self._thread)
-            Camera.thread.start()
-            Camera.event.wait() # Wait until first frame is available
-
-    # Return the current camera frame
-    def get_frame(self):
-        Camera.last_access = time.time()
-        Camera.event.wait()
-        Camera.event.clear()
-        return Camera.frame
-
-    # Generates new frames from the camera
-    @staticmethod
-    def frames():
-        camera = cv2.VideoCapture(0, cv2.CAP_V4L2)
-        if not camera.isOpened():
-            raise RuntimeError('Could not open camera')
-
-        while True:
-            frame = camera.read()[1] # Read frame from camera
-
-            # Draw markings onto frame
-            if get_crosshair():
-                draw_crosshair(frame)
-
-            ret, buffer = cv2.imencode('.jpg', frame) # Encode frame
-            yield buffer.tobytes()
-
-    # Camera background thread
     @classmethod
-    def _thread(cls):
-        print('Starting camera thread')
-        set_indicator_led() # Turn on status indicator light
-        frames_itr = cls.frames()
-        for frame in frames_itr:
-            Camera.frame = frame # Get the current frame
-            Camera.event.set() # Signal clients a new frame is ready
-            time.sleep(0)
+    def __new__(cls, *args, **kwargs) -> 'Camera':
+        """Get or create singleton instance"""
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
+        return cls._instance
 
-            # Stop the thread if no clients request frames for longer than timeout duration
-            if time.time() - Camera.last_access > INACTIVE_TIMEOUT:
-                frames_itr.close()
-                print('Stopping camera thread due to inactivity')
-                clear_indicator_led() # Turn off status indicator light
-                break
-        Camera.thread = None
+    def __init__(self) -> None:
+        """Camera manager initialization"""
+        if self._initialized:
+            return  # Already initialized
+        self._current_frame = b''             # Latest captured JPEG frame (bytes)
+        self._last_client_access = time.time() # Timestamp of last get_frame() call
+        self._idle = False                     # Flag: is camera capture currently paused
+        self._wake_event = threading.Event()   # Event to wake capture thread from idle
+
+        # Start background camera capture thread
+        self._capture_thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self._capture_thread.start()
+        self._initialized = True
+
+    @staticmethod
+    def _draw_crosshair(frame):
+        """Draw crosshair marker on frame"""
+        height, width, _ = frame.shape
+        cv2.drawMarker(frame, (width // 2, height // 2), (0, 0, 255), cv2.MARKER_CROSS, 20, 2)
+
+    def _capture_loop(self):
+        """
+        Main background camera thread loop
+        """
+        camera = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2) # Open camera
+        if camera is not None:
+            print('Camera thread started...')
+            while camera.isOpened():
+
+                # Wait for active clients
+                if self._idle:
+                    self._wake_event.wait()
+                    self._wake_event.clear()
+                    self._idle = False
+                    set_indicator_led()
+                    print('Camera capture resumed')
+
+                # Capture and encode frame
+                ret, frame = camera.read()
+                if not ret:
+                    print('ERROR: Failed to read frame from camera')
+                    time.sleep(0.1)
+                    continue
+                
+                # Draw overlays
+                if get_crosshair():
+                    self._draw_crosshair(frame)
+                
+                # Encode to JPEG
+                ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, FRAME_ENCODE_QUALITY])
+                if not ret:
+                    print('ERROR: Failed to encode frame')
+                    continue
+                
+                # Store frame for clients
+                self._current_frame = buffer.tobytes()
+
+                # Check for inactivity timeout
+                if time.time() - self._last_client_access > INACTIVE_TIMEOUT:
+                    self._idle = True
+                    clear_indicator_led()
+                    print('Camera capture paused due to inactivity')
+
+                # Yield CPU time
+                time.sleep(0.001)
+                
+            # Cleanup on shutdown
+            if camera:
+                camera.release()
+            clear_indicator_led()
+        else:
+            print('ERROR: Could not open camera device')
+
+    def get_frame(self):
+        """
+        Get current camera frame for a client
+        """
+        self._last_client_access = time.time()
+        if self._idle:
+            self._wake_event.set()  # Wake capture thread if idle
+        return self._current_frame
+
+    def stop(self):
+        """Stop capture thread and cleanup"""
+        if self._capture_thread:
+            self._capture_thread.join(timeout=5)
 
 
 

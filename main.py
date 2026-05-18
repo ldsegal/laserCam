@@ -1,29 +1,30 @@
 
 from flask import Flask, render_template, Response, request
-import gevent
 from camera import Camera
 from gpio import init_gpio, set_laser, clear_laser, get_tilt, set_tilt, get_pan, set_pan
 from state_data import set_crosshair
 
 # Web app setup
-GEVENT_SLEEP_TIME = 0.01
 app = Flask(__name__)
 init_gpio()
+cam = Camera()
 
 # Routes
 @app.route('/')
 def index():
     return render_template('index.html')
 
-def gen_frames(camera):
+def gen_frames():
+    """Generate video stream frames"""
     while True:
-        frame = camera.get_frame()
-        yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-        gevent.sleep(GEVENT_SLEEP_TIME)
+        frame = cam.get_frame()
+        if frame:
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         
 @app.route('/video')
 def video():
-    return Response(gen_frames(Camera()), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/move_servo', methods=['POST'])
 def move_servo():

@@ -17,12 +17,13 @@ PAN_MIN = 0       # left
 PAN_CENTER = 90   # horizontal center
 PAN_MAX = 180     # right
 
-# PCA9685 servo driver config
+# PCA9685 servo PWM driver config
 pan_tilt = ServoKit(channels=8)
 #pan_tilt.servo[TILT_IDX].pulse_range = (1000, 2000) # SG90
 #pan_tilt.servo[PAN_IDX].pulse_range = (1000, 2000) # MG90S
 servo_idle_timers = {} # Store idle timers for each servo
 servo_pos = {TILT_IDX: TILT_CENTER, PAN_IDX: PAN_CENTER} # Store last known position for each servo
+
 
 def move_servo(servo_idx: int, angle: int, idle_time: float = 0.3) -> None:
     """

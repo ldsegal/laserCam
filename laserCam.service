@@ -1,0 +1,21 @@
+[Unit]
+Description=LaserCam System Service
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=leo
+Group=www-data
+WorkingDirectory=/home/leo/laserCam
+Environment="PATH=/home/leo/env/laserCam/bin"
+ExecStartPre=/bin/sleep 20
+ExecStart=/home/leo/env/laserCam/bin/python wsgi.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target
