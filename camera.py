@@ -35,7 +35,7 @@ class Camera:
         """Camera manager initialization"""
         if self._initialized:
             return  # Already initialized
-        self._current_frame = b''             # Latest captured JPEG frame (bytes)
+        self._current_frame = b''              # Latest captured JPEG frame (bytes)
         self._last_client_access = time.time() # Timestamp of last get_frame() call
         self._idle = False                     # Flag: is camera capture currently paused
         self._wake_event = threading.Event()   # Event to wake capture thread from idle

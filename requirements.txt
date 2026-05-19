@@ -1,10 +1,8 @@
 
 # Webserver
 flask
-turbo_flask
-gevent
-redis
 nginx
+redis
 
 # Camera libraries
 picamera
