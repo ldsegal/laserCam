@@ -2,11 +2,14 @@
 # Webserver
 flask
 nginx
+requests
 redis
 
 # Camera libraries
 picamera
 opencv-python
+ffmpeg
+#mediamtx - downloaded binary
 
 RPi.GPIO # GPIO pin control for laser
 adafruit-circuitpython-servokit # PCA9685 servo driver for pan & tilting

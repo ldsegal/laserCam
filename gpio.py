@@ -25,7 +25,7 @@ servo_idle_timers = {} # Store idle timers for each servo
 servo_pos = {TILT_IDX: TILT_CENTER, PAN_IDX: PAN_CENTER} # Store last known position for each servo
 
 
-def move_servo(servo_idx: int, angle: int, idle_time: float = 0.3) -> None:
+def move_servo(servo_idx: int, angle: int, idle_time: float = 0.1) -> None:
     """
     Performs servo movement. First checks movement is within bounds, then moves servo, and finally sets timer to 'idle' the servo after period of inactivity.
     """

@@ -1,13 +1,13 @@
 
 from flask import Flask, render_template, Response, request
-from camera import Camera
+from camera import VideoStream
 from gpio import init_gpio, set_laser, clear_laser, get_tilt, set_tilt, get_pan, set_pan
 from state_data import set_crosshair
 
 # Web app setup
 app = Flask(__name__)
-init_gpio()
-cam = Camera()
+init_gpio()   # Initialize GPIO control for laser,servos, & LEDs
+VideoStream() # Start camera stream (singleton instance) on app startup
 
 # Routes
 @app.route('/')
