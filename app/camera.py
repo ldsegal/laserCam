@@ -5,8 +5,7 @@ import requests
 import threading
 import subprocess
 from picamera2 import Picamera2
-from gpio import set_indicator_led, clear_indicator_led
-from state_data import get_crosshair
+from app.gpio import set_indicator_led, clear_indicator_led
 
 
 CAM_INDEX = 0       # Camera device index
@@ -22,7 +21,8 @@ MEDIA_MTX_API_URL = "http://localhost:9997/v3/paths/list" # MediaMTX stats endpo
 class VideoStream:
     """
     Improved camera pipeline:
-    - Captures frames with OpenCV
+    - Captures frames with Picamera2
+    - Overlays & frame processing with OpenCV
     - Pipes to FFmpeg with H.264 hardware encoding (Raspberry Pi)
     - Streams RTSP to MediaMTX for WebRTC conversion
     """
@@ -186,11 +186,7 @@ class VideoStream:
     def _capture_loop(self) -> None:
         """Main capture thread: Picamera2 -> OpenCV -> FFmpeg -> MediaMTX"""
         try:
-            while self._cam.is_open:
-
-                # Check for stop signal
-                if self._shutdown:
-                    break
+            while self._cam.is_open and not self._shutdown:
 
                 # Wait for active clients
                 if self._idle:
@@ -218,7 +214,8 @@ class VideoStream:
                     assert self._ffmpeg_process and self._ffmpeg_process.stdin
                     self._ffmpeg_process.stdin.write(frame.tobytes())
                 except (BrokenPipeError, OSError):
-                    print('ERROR: FFmpeg process disconnected')
+                    if not self._shutdown:
+                        print('Error writing frame: FFmpeg process disconnected')
                     break
 
                 # Yield CPU time

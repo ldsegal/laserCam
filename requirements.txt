@@ -1,15 +1,25 @@
 
-# Webserver
-flask
-nginx
-requests
-redis
+# *** Create venv with system packages linked! ***
+# python3 -m venv .venv --system-site-packages --prompt laserCam
+# source .venv/bin/activate
+# pip install -r requirements.txt
 
-# Camera libraries
-picamera
-opencv-python
-ffmpeg
+# Webserver
+#nginx           # Reverse proxy for filtering connections and routing traffic
+gunicorn         # Production web server gateway interface (wsgi) to server the python flask app
+gevent           # For running gunicorn with workers that support WebSockets
+gevent-websocket
+flask            # Python webapp
+flask-socketio   # Websocket support needed in flask for faster real-time control of hardware and connection monitoring
+requests         # Http requests for basic API calls
+
+# Camera Libraries
+# libcap-dev
+picamera2
+opencv-python-headless
+#ffmpeg
 #mediamtx - downloaded binary
 
-RPi.GPIO # GPIO pin control for laser
+# Hardware Control
+RPi.GPIO # GPIO pin control for laser & LEDs
 adafruit-circuitpython-servokit # PCA9685 servo driver for pan & tilting

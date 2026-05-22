@@ -1,6 +1,7 @@
 [Unit]
 Description=MediaMTX WebRTC Server
-After=network.target
+After=network-online.target nginx.service
+Requires=network-online.target nginx.service
 
 [Service]
 Type=simple

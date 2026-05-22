@@ -1,0 +1,20 @@
+[Unit]
+Description=LaserCam System Service
+After=mediamtx.service
+Requires=mediamtx.service
+
+[Service]
+Type=simple
+User=leo
+Group=www-data
+WorkingDirectory=/home/leo/laserCam
+Environment="PATH=/home/leo/laserCam/.venv/bin:/usr/bin:/bin"
+ExecStart=/home/leo/laserCam/.venv/bin/gunicorn --worker-class gevent -w 1 --bind 127.0.0.1:5000 app.main:app
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target
