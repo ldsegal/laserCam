@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, Response, request
+from flask import Flask, render_template, request
 from camera import VideoStream
 from gpio import init_gpio, set_laser, clear_laser, get_tilt, set_tilt, get_pan, set_pan
 from state_data import set_crosshair
@@ -7,24 +7,12 @@ from state_data import set_crosshair
 # Web app setup
 app = Flask(__name__)
 init_gpio()   # Initialize GPIO control for laser,servos, & LEDs
-VideoStream() # Start camera stream (singleton instance) on app startup
+stream = VideoStream() # Start camera stream (singleton instance) on app startup
 
 # Routes
 @app.route('/')
 def index():
     return render_template('index.html')
-
-def gen_frames():
-    """Generate video stream frames"""
-    while True:
-        frame = cam.get_frame()
-        if frame:
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-        
-@app.route('/video')
-def video():
-    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/move_servo', methods=['POST'])
 def move_servo():
@@ -55,4 +43,7 @@ def toggle_crosshair():
 
 # App main entry point
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=False)
+    try:
+        app.run(host='0.0.0.0', port=5000, debug=False)
+    finally:
+        stream.stop()
