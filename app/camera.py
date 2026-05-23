@@ -1,7 +1,6 @@
 
 import cv2
 import time
-import requests
 import threading
 import subprocess
 from picamera2 import Picamera2
@@ -9,11 +8,10 @@ from app.gpio import set_indicator_led, clear_indicator_led
 
 
 CAM_INDEX = 0       # Camera device index
-CAM_WIDTH = 1280    # Camera capture width
-CAM_HEIGHT = 720    # Camera capture height
+CAM_WIDTH = 1640    # Camera capture width
+CAM_HEIGHT = 922    # Camera capture height
 CAM_FPS = 30        # Camera capture frames per second
 BITRATE = "2M"      # FFmpeg encoding bitrate
-ACTIVE_USER_CHECK_INTERVAL = 5 # Seconds between checks for active users
 RTSP_OUTPUT = "rtsp://localhost:8554/stream"  # Stream output URL
 MEDIA_MTX_API_URL = "http://localhost:9997/v3/paths/list" # MediaMTX stats endpoint for monitoring active users
 
@@ -26,25 +24,10 @@ class VideoStream:
     - Pipes to FFmpeg with H.264 hardware encoding (Raspberry Pi)
     - Streams RTSP to MediaMTX for WebRTC conversion
     """
-    _instance = None
-    _lock = threading.Lock()
-
-    def __new__(cls) -> 'VideoStream':
-        """Get or create singleton instance"""
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
-        return cls._instance
-
     def __init__(self) -> None:
         """Video stream initialization"""
-        if self._initialized:
-            return  # Already initialized
-        
         self._cam = Picamera2()                # Picamera2 instance
-        self._idle = False                     # Flag: is camera capture currently paused
+        self._idle = True                      # Flag: is camera capture currently paused
         self._shutdown = False                 # Flag: signal capture thread to shutdown
         self._wake_event = threading.Event()   # Event to wake capture thread from idle
         self._ffmpeg_process = None            # FFmpeg subprocess for encoding stream
@@ -58,16 +41,11 @@ class VideoStream:
         if not self._cam.is_open:
             print('ERROR: Failed to open camera')
             return
-        print('Camera configured, starting capture...')
-        self._start_stream() # Start the stream!
+        print('Camera configured, ready to start...')
 
         # Start background camera capture thread
         self._capture_thread = threading.Thread(target=self._capture_loop)
         self._capture_thread.start()
-
-        self.users_active = 0 # Track current number of viewers
-        #self._check_viewers() # Start monitoring for viewers
-        self._initialized = True
 
     @staticmethod
     def _draw_crosshair(frame) -> None:
@@ -154,35 +132,6 @@ class VideoStream:
                 raise
         print('Camera closed')
 
-    def _check_viewers(self) -> None:
-        """Updates active viewer count and idles the stream if zero, checks on a regular interval"""
-
-        # Check MediaMTX stats endpoint for active clients
-        try:
-            resp = requests.get(MEDIA_MTX_API_URL, timeout=1)
-            if resp.status_code == 200:
-                print(resp.json())
-                self.users_active = len(resp.json().get('items', [])[0].get('readers', []))
-            else:
-                print(f'ERROR: MediaMTX api endpoint returned status {resp.status_code}')
-        except Exception as e:
-            print(f'ERROR: Failed to reach MediaMTX to check active viewers: {e}')
-
-        # Set status
-        if self.users_active:
-            set_indicator_led()
-            self._idle = False
-            self._wake_event.set() # Wake capture thread if it was idle
-        else:
-            clear_indicator_led()
-            self._idle = True
-
-        # Schedule the next check (recurring timer)
-        if not self._shutdown:
-            user_monitor_thread = threading.Timer(ACTIVE_USER_CHECK_INTERVAL, self._check_viewers)
-            user_monitor_thread.daemon = True # Ensure thread closes when main script exits
-            user_monitor_thread.start()
-
     def _capture_loop(self) -> None:
         """Main capture thread: Picamera2 -> OpenCV -> FFmpeg -> MediaMTX"""
         try:
@@ -196,7 +145,6 @@ class VideoStream:
                         break
                     self._start_stream()
                     self._wake_event.clear()
-                    self._idle = False
 
                 # Capture frame
                 frame = self._cam.capture_array()
@@ -223,6 +171,19 @@ class VideoStream:
                 
         finally:
             print('Capture thread stopped')
+
+    def is_idle(self) -> bool:
+        """Is the stream currently idle (paused)"""
+        return self._idle
+
+    def start(self) -> None:
+        """Start the stream"""
+        self._idle = False
+        self._wake_event.set()
+
+    def idle(self) -> None:
+        """Pause the stream (idle mode)"""
+        self._idle = True
 
     def stop(self) -> None:
         """Stop capture thread and end video stream"""

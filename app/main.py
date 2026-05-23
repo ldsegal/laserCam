@@ -37,6 +37,8 @@ def handle_connect():
     global num_clients
     num_clients += 1
     print(f'Client connected. Active Viewers: {num_clients}')
+    if stream.is_idle():
+        stream.start() # Start stream if it was idle
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -44,6 +46,8 @@ def handle_disconnect():
     global num_clients
     num_clients = max(0, num_clients - 1)
     print(f"Client Disconnected. Active Viewers: {num_clients}")
+    if num_clients == 0:
+        stream.idle() # Pause stream if no active viewers
 
 @socketio.on('joystick_move')
 def handle_joystick_move(data):
