@@ -1,10 +1,10 @@
 
-import cv2
 import time
 import threading
 import subprocess
 from picamera2 import Picamera2
-from app.gpio import set_indicator_led, clear_indicator_led
+from app.overlays import imageProcessor
+from app.gpio import gpio
 
 
 CAM_INDEX = 0       # Camera device index
@@ -16,7 +16,7 @@ RTSP_OUTPUT = "rtsp://localhost:8554/stream"  # Stream output URL
 MEDIA_MTX_API_URL = "http://localhost:9997/v3/paths/list" # MediaMTX stats endpoint for monitoring active users
 
 
-class VideoStream:
+class _VideoStream:
     """
     Improved camera pipeline:
     - Captures frames with Picamera2
@@ -46,12 +46,6 @@ class VideoStream:
         # Start background camera capture thread
         self._capture_thread = threading.Thread(target=self._capture_loop)
         self._capture_thread.start()
-
-    @staticmethod
-    def _draw_crosshair(frame) -> None:
-        """Draw crosshair marker on frame"""
-        height, width, _ = frame.shape
-        cv2.drawMarker(frame, (width // 2, height // 2), (0, 0, 255), cv2.MARKER_CROSS, 20, 2)
 
     @staticmethod
     def _get_ffmpeg_command(width=CAM_WIDTH, height=CAM_HEIGHT, fps=CAM_FPS, bitrate=BITRATE) -> list:
@@ -91,7 +85,7 @@ class VideoStream:
             )
             print(f'FFmpeg streaming to {RTSP_OUTPUT}')
 
-        set_indicator_led() # Indicate stream is active
+        gpio.set_indicator_led() # Indicate stream is active
 
     def _pause_stream(self) -> None:
         """Pause the video stream (idle mode)"""
@@ -115,7 +109,7 @@ class VideoStream:
             self._cam.stop()
             print('Camera stopped')
 
-        clear_indicator_led() # Indicate stream is paused
+        gpio.clear_indicator_led() # Indicate stream is paused
 
     def _end_stream(self) -> None:
         """End the video stream and clean up resources"""
@@ -154,8 +148,7 @@ class VideoStream:
                     continue
                 
                 # Draw overlays
-                #if get_crosshair():
-                #    self._draw_crosshair(frame)
+                imageProcessor.draw_overlays(frame)
                 
                 # Send frame to FFmpeg stdin
                 try:
@@ -192,6 +185,5 @@ class VideoStream:
         self._capture_thread.join()
         self._end_stream()
 
-
-
-
+# Singleton VideoStream instance
+stream = _VideoStream()

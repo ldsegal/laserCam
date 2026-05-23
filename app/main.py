@@ -5,8 +5,9 @@ monkey.patch_all()  # Patch standard library for gevent compatibility (for WebSo
 import atexit
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
-from app.camera import VideoStream
-from app.gpio import init_gpio, set_laser, clear_laser
+from app.camera import stream
+from app.gpio import gpio
+from app.overlays import imageProcessor
 
 # Global app state data
 num_clients = 0
@@ -14,8 +15,6 @@ num_clients = 0
 # Web app setup
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='gevent', cors_allowed_origins="*") # TODO test without this security setting
-init_gpio()   # Initialize GPIO control for laser,servos, & LEDs
-stream = VideoStream() # Start camera stream (singleton instance) on app startup
 
 # Routes
 @app.route('/')
@@ -23,12 +22,17 @@ def index():
     """Serves the main web control interface"""
     return render_template('index.html')
 
-@app.route('/toggle_laser', methods=['POST'])
-def toggle_laser():
+@app.route('/set_laser', methods=['POST'])
+def set_laser():
     if request.json['value']:
-        set_laser()
+        gpio.set_laser()
     else:
-        clear_laser() 
+        gpio.clear_laser()
+    return '', 204
+
+@app.route('/set_crosshair', methods=['POST'])
+def set_crosshair():
+    imageProcessor.enable_crosshair(request.json['value'])
     return '', 204
 
 @socketio.on('connect')
