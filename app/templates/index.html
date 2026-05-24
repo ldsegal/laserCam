@@ -1,61 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luke & Leia's Laser</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+        <link rel="stylesheet" href="/static/style.css">
+        <title>Luke & Leia's Laser</title>
+    </head>
+    <body>
+        <div id="login">
+            <!-- From Uiverse.io by ozgeozkaraa01 --> 
+            <div class="group">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon">
+                    <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke-linejoin="round" stroke-linecap="round"></path>
+                </svg>
+                <input id="input" type="password" placeholder="password">
+            </div>
+        </div>
 
-    </style>
-</head>
-<body>
-    <div id="status">Starting livestream...</div>
-    <video id="stream" autoplay muted playsinline></video>
+        <div id="app-container" style="display: none;">
+            <div id="status">Starting livestream...</div>
+            <video id="stream" autoplay muted playsinline></video>
+            <div id="controls">
 
-    <script>
-        // WebRTC video connection
-        async function connect() {
-            const video = document.getElementById("stream");
-            const status = document.getElementById("status");
-            const pc = new RTCPeerConnection();
-
-            pc.ontrack = (e) => {
-                status.style.display = "none";
-                video.style.display = "block";
-                video.srcObject = e.streams[0];
-            };
-            pc.addTransceiver("video", { direction: "recvonly" });
-
-            try {
-                const offer = await pc.createOffer();
-                await pc.setLocalDescription(offer);
-
-                const res = await fetch("/stream/laserCam/whep", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/sdp" },
-                    body: pc.localDescription.sdp
-                });
-
-                if (res.status !== 200 && res.status !== 201) {
-                    throw new Error("Stream not ready");
-                }
-
-                const answer = await res.text();
-                await pc.setRemoteDescription({ type: "answer", sdp: answer });
-
-            } catch (err) {
-                setTimeout(connect, 500);
-            }
-        }
-        connect();
-    </script>
-    
-    <script>
-        // SocketIO connection
-        var socket = io({
-            path: '/socket.io/'
-        });
-    </script>
-</body>
+            </div>
+        </div>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+        <script src="/static/script.js"></script>
+    </body>
 </html>

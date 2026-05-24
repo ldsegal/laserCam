@@ -12,6 +12,7 @@ gevent-websocket
 flask            # Python webapp
 flask-socketio   # Websocket support needed in flask for faster real-time control of hardware and connection monitoring
 requests         # Http requests for basic API calls
+dotenv
 
 # Camera Libraries
 # libcap-dev
