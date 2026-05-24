@@ -32,6 +32,6 @@ webrtcLocalUDPAddress: :8189
 
 # Stream Path
 paths:
-  stream:
+  laserCam:
     source: publisher
     record: false

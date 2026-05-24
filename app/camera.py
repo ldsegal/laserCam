@@ -12,7 +12,7 @@ CAM_WIDTH = 1640    # Camera capture width
 CAM_HEIGHT = 922    # Camera capture height
 CAM_FPS = 30        # Camera capture frames per second
 BITRATE = "2M"      # FFmpeg encoding bitrate
-RTSP_OUTPUT = "rtsp://localhost:8554/stream"  # Stream output URL
+RTSP_OUTPUT = "rtsp://localhost:8554/laserCam"  # Stream output URL
 MEDIA_MTX_API_URL = "http://localhost:9997/v3/paths/list" # MediaMTX stats endpoint for monitoring active users
 
 

@@ -3,6 +3,7 @@ from gevent import monkey
 monkey.patch_all()  # Patch standard library for gevent compatibility (for WebSockets)
 
 import atexit
+import threading
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from app.camera import stream
@@ -11,6 +12,8 @@ from app.overlays import imageProcessor
 
 # Global app state data
 num_clients = 0
+stream_idle_timer = None
+stream_idle_timeout = 10.0 # Seconds of inactivity before pausing stream
 
 # Web app setup
 app = Flask(__name__)
@@ -38,20 +41,26 @@ def set_crosshair():
 @socketio.on('connect')
 def handle_connect():
     """New client connected"""
-    global num_clients
+    global num_clients, stream_idle_timer
     num_clients += 1
     print(f'Client connected. Active Viewers: {num_clients}')
+    if stream_idle_timer:
+        stream_idle_timer.cancel() # Cancel any existing timer
+        stream_idle_timer = None
     if stream.is_idle():
         stream.start() # Start stream if it was idle
 
 @socketio.on('disconnect')
 def handle_disconnect():
     """Client disconnected"""
-    global num_clients
+    global num_clients, stream_idle_timer
     num_clients = max(0, num_clients - 1)
     print(f"Client Disconnected. Active Viewers: {num_clients}")
     if num_clients == 0:
-        stream.idle() # Pause stream if no active viewers
+        if stream_idle_timer:
+            stream_idle_timer.cancel() # Cancel any existing timer
+        stream_idle_timer = threading.Timer(stream_idle_timeout, stream.idle)
+        stream_idle_timer.start() # Set timer to idle stream
 
 @socketio.on('joystick_move')
 def handle_joystick_move(data):
