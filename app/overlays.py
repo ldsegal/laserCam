@@ -22,7 +22,7 @@ class _ImageProcessor():
     def _draw_crosshair(frame: np.ndarray) -> None:
         """Draw crosshair marker on frame"""
         height, width, _ = frame.shape
-        cv2.drawMarker(frame, (width // 2, height // 2), (0, 0, 255), cv2.MARKER_CROSS, 20, 2)
+        cv2.drawMarker(frame, (width // 2, height // 2), (255, 0, 0), cv2.MARKER_CROSS, 40, 4)
 
 # Singleton ImageProcessor instance
 imageProcessor = _ImageProcessor()
