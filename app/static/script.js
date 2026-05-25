@@ -73,16 +73,18 @@ function setupToggle(checkboxId, route) {
 
     checkbox.addEventListener('change', (e) => {
         const isChecked = e.target.checked;
-
         fetch(route, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ state: isChecked }),
         })
-        .then(response => response.json())
-        .then(data => console.log('Success:', data))
+        .then(response => {
+            if (response.ok) {
+                console.log('Action successful');
+            } else {
+                console.error('Server returned error:', response.status);
+            }
+        })
         .catch(error => console.error('Error:', error));
     });
 }
@@ -90,6 +92,23 @@ function setupToggle(checkboxId, route) {
 // Initialize routes
 setupToggle('laser', '/set_laser');
 setupToggle('crosshair', '/set_crosshair');
+
+// Joystick
+const manager = nipplejs.create({
+    zone: document.getElementById('joystick-zone'),
+    mode: 'static',
+    position: { left: '50%', top: '50%' }, // Center inside the zone
+    color: '#0974f1', // Matches your other UI elements
+    size: 100,        // Total size of the joystick
+    restJoystick: true,
+    restOpacity: 0.5  // Fades out slightly when not in use
+});
+manager.on('move', (evt, data) => {
+    socket.emit('joystick_move', { 
+        x: data.vector.x, 
+        y: data.vector.y 
+    });
+});
 
 // Set fullscreen on rotate
 window.addEventListener("orientationchange", () => {

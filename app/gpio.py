@@ -43,7 +43,7 @@ class _GPIO():
         self._servo_idle_timers = {} # Store idle timers for each servo
 
         # Set hardware to default states
-        self.clear_laser()
+        self.set_laser(False)
         self.clear_indicator_led()
         self.center_pan_tilt()
 
@@ -87,15 +87,13 @@ class _GPIO():
         RPi.GPIO.output(LED_PIN, RPi.GPIO.LOW)
         self._led_on = False
 
-    def set_laser(self) -> None:
-        """Turn laser on"""
-        RPi.GPIO.output(LASER_PIN, RPi.GPIO.HIGH)
-        self._laser_on = True
-
-    def clear_laser(self) -> None:
-        """Turn laser off"""
-        RPi.GPIO.output(LASER_PIN, RPi.GPIO.LOW)
-        self._laser_on = False
+    def set_laser(self, enable: bool) -> None:
+        """Toggle laser"""
+        if enable:
+            RPi.GPIO.output(LASER_PIN, RPi.GPIO.HIGH)
+        else:
+            RPi.GPIO.output(LASER_PIN, RPi.GPIO.LOW)
+        self._laser_on = enable
 
     def get_tilt(self) -> int:
         """Get servo tilt angle (cached value, not from hardware)"""

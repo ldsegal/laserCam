@@ -136,3 +136,24 @@ body {
   align-items: flex-start;
   gap: 10px;
 }
+
+#joystick-zone {
+    /* Position with padding to avoid screen edge */
+    position: absolute;
+    bottom: 40px; 
+    right: 40px;
+    
+    /* Ensure it has a dedicated area */
+    width: 150px;
+    height: 150px;
+    z-index: 1000;
+    
+    /* Visual improvement: semi-transparent background base */
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+#joystick-zone:active {
+    background: rgba(9, 116, 241, 0.2);
+    transition: background 0.2s ease;
+}

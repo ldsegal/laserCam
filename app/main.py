@@ -55,10 +55,7 @@ def add_client():
 
 @app.route('/set_laser', methods=['POST'])
 def set_laser():
-    if request.json.get('state'):
-        gpio.set_laser()
-    else:
-        gpio.clear_laser()
+    gpio.set_laser(request.json.get('state'))
     return '', 204
 
 @app.route('/set_crosshair', methods=['POST'])
@@ -71,8 +68,13 @@ def handle_joystick_move(data):
     """
     Receives continuous coordinate streams from the frontend joystick
     """
+    MAX_SPEED = 1
     x = data.get('x', 0)
     y = data.get('y', 0)
+    print(f"MOVE SERVO -> ({x}, {y})")
+    x = gpio.get_pan() + (x * MAX_SPEED)
+    y = gpio.get_tilt() + (y * MAX_SPEED)
+    gpio.set_pan_tilt(x, y)
 
 @socketio.on('disconnect')
 def handle_disconnect():
