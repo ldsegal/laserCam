@@ -67,6 +67,30 @@ async function connect() {
     }
 }
 
+// Function to handle the toggle
+function setupToggle(checkboxId, route) {
+    const checkbox = document.getElementById(checkboxId);
+
+    checkbox.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+
+        fetch(route, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ state: isChecked }),
+        })
+        .then(response => response.json())
+        .then(data => console.log('Success:', data))
+        .catch(error => console.error('Error:', error));
+    });
+}
+
+// Initialize routes
+setupToggle('laser', '/set_laser');
+setupToggle('crosshair', '/set_crosshair');
+
 // Set fullscreen on rotate
 window.addEventListener("orientationchange", () => {
     if (window.orientation === 90 || window.orientation === -90) {

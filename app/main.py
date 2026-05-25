@@ -55,7 +55,7 @@ def add_client():
 
 @app.route('/set_laser', methods=['POST'])
 def set_laser():
-    if request.json['value']:
+    if request.json.get('state'):
         gpio.set_laser()
     else:
         gpio.clear_laser()
@@ -63,7 +63,7 @@ def set_laser():
 
 @app.route('/set_crosshair', methods=['POST'])
 def set_crosshair():
-    imageProcessor.enable_crosshair(request.json['value'])
+    imageProcessor.enable_crosshair(request.json.get('state'))
     return '', 204
 
 @socketio.on('joystick_move')
