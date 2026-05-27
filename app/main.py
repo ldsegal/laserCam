@@ -68,13 +68,7 @@ def handle_joystick_move(data):
     """
     Receives continuous coordinate streams from the frontend joystick
     """
-    MAX_SPEED = 1
-    x = data.get('x', 0)
-    y = data.get('y', 0)
-    print(f"MOVE SERVO -> ({x}, {y})")
-    x = gpio.get_pan() + (x * MAX_SPEED)
-    y = gpio.get_tilt() + (y * MAX_SPEED)
-    gpio.set_pan_tilt(x, y)
+    gpio.set_pan_tilt_velocity(data.get('x', 0), data.get('y', 0))
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -91,7 +85,8 @@ def handle_disconnect():
 @atexit.register
 def global_shutdown():
     """Shutdown handler to clean up resources on exit"""
-    stream.stop()
+    stream.close()
+    gpio.close()
 
 # Development testing entry point
 if __name__ == '__main__':

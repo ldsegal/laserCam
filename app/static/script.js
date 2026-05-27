@@ -94,7 +94,7 @@ setupToggle('laser', '/set_laser');
 setupToggle('crosshair', '/set_crosshair');
 
 // Joystick
-const manager = nipplejs.create({
+const joystick = nipplejs.create({
     zone: document.getElementById('joystick-zone'),
     mode: 'static',
     position: { left: '50%', top: '50%' }, // Center inside the zone
@@ -103,10 +103,16 @@ const manager = nipplejs.create({
     restJoystick: true,
     restOpacity: 0.5  // Fades out slightly when not in use
 });
-manager.on('move', (evt, data) => {
+joystick.on('move', (evt, data) => {
     socket.emit('joystick_move', { 
         x: data.vector.x, 
         y: data.vector.y 
+    });
+});
+joystick.on('end', (evt, data) => {
+    socket.emit('joystick_move', { 
+        x: 0, 
+        y: 0 
     });
 });
 

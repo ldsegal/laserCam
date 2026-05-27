@@ -85,7 +85,7 @@ class _VideoStream:
             )
             print(f'FFmpeg streaming to {RTSP_OUTPUT}')
 
-        gpio.set_indicator_led() # Indicate stream is active
+        gpio.set_indicator_led(True) # Indicate stream is active
 
     def _pause_stream(self) -> None:
         """Pause the video stream (idle mode)"""
@@ -109,7 +109,7 @@ class _VideoStream:
             self._cam.stop()
             print('Camera stopped')
 
-        gpio.clear_indicator_led() # Indicate stream is paused
+        gpio.set_indicator_led(False) # Indicate stream is paused
 
     def _end_stream(self) -> None:
         """End the video stream and clean up resources"""
@@ -178,7 +178,7 @@ class _VideoStream:
         """Pause the stream (idle mode)"""
         self._idle = True
 
-    def stop(self) -> None:
+    def close(self) -> None:
         """Stop capture thread and end video stream"""
         self._shutdown = True
         self._wake_event.set() # Wake thread if it's paused
