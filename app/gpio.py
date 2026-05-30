@@ -11,14 +11,14 @@ LASER_PIN = 14
 # Servo pan/tilt range calibrations
 TILT_IDX = 0      # Vertical tilting servo (SG90)
 PAN_IDX = 1       # Horizontal panning servo (MG90S)
-TILT_MIN = 50     # Down
+TILT_MIN = 15     # Down
 TILT_CENTER = 85  # Vertical center
-TILT_MAX = 120    # Up
+TILT_MAX = 100    # Up
 PAN_MIN = 0       # Left
 PAN_CENTER = 90   # Horizontal center
 PAN_MAX = 180     # Right
 SERVO_IDLE_TIME = 0.2 # Seconds without movement before turning off PWM signal to servo (to prevent buzzing/jittering)
-SERVO_UPDATE_DELAY = 0.005 # 200hz (5ms)
+SERVO_UPDATE_DELAY = 0.001 # 1000hz (1ms)
 
 
 class _Servo():

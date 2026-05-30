@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 
+CROSSHAIR_OFFSET_X = 93
+CROSSHAIR_OFFSET_Y = -135
+
 class _ImageProcessor():
     """
     Class to handle image processing tasks and overlay drawing on video frames using OpenCV
@@ -22,7 +25,7 @@ class _ImageProcessor():
     def _draw_crosshair(frame: np.ndarray) -> None:
         """Draw crosshair marker on frame"""
         height, width, _ = frame.shape
-        cv2.drawMarker(frame, (width // 2, height // 2), (255, 0, 0), cv2.MARKER_CROSS, 40, 4)
+        cv2.drawMarker(frame, ((width // 2) + CROSSHAIR_OFFSET_X, (height // 2) + CROSSHAIR_OFFSET_Y), (255, 0, 0), cv2.MARKER_CROSS, 40, 4)
 
 # Singleton ImageProcessor instance
 imageProcessor = _ImageProcessor()

@@ -68,6 +68,7 @@ def handle_joystick_move(data):
     """
     Receives continuous coordinate streams from the frontend joystick
     """
+    #print(f"[MOVE]    X: {data.get('x'):.3f}, Y: {data.get('y'):.3f}")
     gpio.set_pan_tilt_velocity(data.get('x', 0), data.get('y', 0))
 
 @socketio.on('disconnect')

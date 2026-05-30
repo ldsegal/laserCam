@@ -3,9 +3,16 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
         <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
         <link rel="stylesheet" href="/static/style.css">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+
+        <script type="module" src="https://unpkg.com/nipplejs/dist/index.mjs"></script>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Geo:ital@0;1&display=swap" rel="stylesheet">
+
         <title>Luke & Leia's Laser</title>
     </head>
     <body>
@@ -42,6 +49,6 @@
         </div>
         
         <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-        <script src="/static/script.js"></script>
+        <script type="module" src="/static/script.js"></script>
     </body>
 </html>

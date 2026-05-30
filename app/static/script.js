@@ -5,11 +5,24 @@ const loginContainer = document.getElementById("login")
 const appContainer = document.getElementById("app-container")
 const video = document.getElementById("stream");
 const status = document.getElementById("status");
+const dynamicSize = (Math.min(window.innerWidth, window.innerHeight) * 0.40);
 
 // SocketIO Connection
 var socket = io({
     path: '/socket.io/'
 });
+
+// Throttle function to limit rapid SocketIO commands
+function throttle(func, delay) {
+    let lastCall = 0;
+    return function (...args) {
+        const now = new Date().getTime();
+        if (now - lastCall >= delay) {
+            lastCall = now;
+            func(...args);
+        }
+    };
+}
 
 // Login Listener
 passwordInput.addEventListener("keypress", async function (event) {
@@ -94,22 +107,30 @@ setupToggle('laser', '/set_laser');
 setupToggle('crosshair', '/set_crosshair');
 
 // Joystick
+import nipplejs from 'https://unpkg.com/nipplejs/dist/index.mjs';
 const joystick = nipplejs.create({
     zone: document.getElementById('joystick-zone'),
     mode: 'static',
-    position: { left: '50%', top: '50%' }, // Center inside the zone
-    color: '#0974f1', // Matches your other UI elements
-    size: 100,        // Total size of the joystick
+    color: {
+        front: 'url("static/aim.svg") center/75% no-repeat, ' +
+        'linear-gradient(135deg, #ff1100, #540169)',
+        back: 'rgba(236, 8, 8, 0.2)',
+    },
+    size: dynamicSize,
+    position: { left: '50%', top: '50%' },
     restJoystick: true,
-    restOpacity: 0.5  // Fades out slightly when not in use
 });
-joystick.on('move', (evt, data) => {
+const throttledJoystickMove = throttle((evt) => {
+    const vector = evt.data.vector
     socket.emit('joystick_move', { 
-        x: data.vector.x, 
-        y: data.vector.y 
+        x: vector.x, 
+        y: vector.y 
     });
+}, 33); // Limit moves to ~33ms (30fps)
+joystick.on('move', (evt) => {
+    throttledJoystickMove(evt)
 });
-joystick.on('end', (evt, data) => {
+joystick.on('end', (evt) => {
     socket.emit('joystick_move', { 
         x: 0, 
         y: 0 

@@ -20,6 +20,7 @@ picamera2
 opencv-python-headless
 #ffmpeg
 #mediamtx - downloaded binary
+numpy   # Used for image processing
 
 # Hardware Control
 RPi.GPIO # GPIO pin control for laser & LEDs

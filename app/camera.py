@@ -11,7 +11,8 @@ CAM_INDEX = 0       # Camera device index
 CAM_WIDTH = 1640    # Camera capture width
 CAM_HEIGHT = 922    # Camera capture height
 CAM_FPS = 30        # Camera capture frames per second
-BITRATE = "2M"      # FFmpeg encoding bitrate
+SHARPNESS = 1.0     # Camera sharpness smoothing
+BITRATE = "4M"      # FFmpeg encoding bitrate
 RTSP_OUTPUT = "rtsp://localhost:8554/laserCam"  # Stream output URL
 MEDIA_MTX_API_URL = "http://localhost:9997/v3/paths/list" # MediaMTX stats endpoint for monitoring active users
 
@@ -36,7 +37,9 @@ class _VideoStream:
         self._cam.configure(
             self._cam.create_video_configuration(
             main={"size": (CAM_WIDTH, CAM_HEIGHT), "format": "BGR888"}, 
-            controls={"FrameRate": CAM_FPS})
+            controls={"FrameRate": CAM_FPS,
+                      "NoiseReductionMode": 2,
+                      "Sharpness": SHARPNESS})
         )
         if not self._cam.is_open:
             print('ERROR: Failed to open camera')
@@ -62,7 +65,6 @@ class _VideoStream:
             '-i', 'pipe:0',  # stdin
             '-c:v', 'h264_v4l2m2m',  # Raspberry Pi hardware encoder
             '-b:v', bitrate,
-            '-preset', 'veryfast',
             '-f', 'rtsp',
             RTSP_OUTPUT,
         ]
